@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-container input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+
+        .search-container button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .job-listings {
+            width: 80%;
+            max-width: 800px;
+        }
+
+        .job {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .job h2 {
+            margin: 0 0 10px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .job p {
+            margin: 0 0 10px;
+            color: #666;
+        }
+
+        .job a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .job a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <h1>Find Your Dream Job</h1>
+        <input type="text" id="job-search" placeholder="Search for jobs...">
+        <button onclick="searchJobs()">Search</button>
+    </div>
+
+    <div id="job-results" class="job-listings"></div>
+
+    <script>
+        function searchJobs() {
+            const query = document.getElementById('job-search').value.toLowerCase();
+            fetch('jobs')
+                .then(response => response.json())
+                .then(data => {
+                    const resultsContainer = document.getElementById('job-results');
+                    resultsContainer.innerHTML = '';
+
+                    const filteredData = data.filter(job =>
+                        job.job_title.toLowerCase().includes(query) ||
+                        job.company_name.toLowerCase().includes(query) ||
+                        job.job_location.toLowerCase().includes(query)
+                    );
+
+                    filteredData.forEach(job => {
+                        const jobDiv = document.createElement('div');
+                        jobDiv.classList.add('job');
+                        jobDiv.innerHTML = `
+                            <h2>${job.job_title}</h2>
+                            <p><strong>Company:</strong> ${job.company_name}</p>
+                            <p><strong>Location:</strong> ${job.job_location}</p>
+                            <p>${job.job_description}</p>
+                            <a href="${job.job_url}" target="_blank">View Job</a>
+                            <br>
+                            <a href="${job.company_url}" target="_blank">Company Website</a>
+                        `;
+                        resultsContainer.appendChild(jobDiv);
+                    });
+
+                    if (filteredData.length === 0) {
+                        resultsContainer.innerHTML = '<p>No jobs found matching your search criteria.</p>';
+                    }
+                });
+        }
+    </script>
+</body>
+</html>
