@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Portal</title>
+    <title>JobsKhojo - Find Your Dream Job</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             height: 100vh;
-            background-color: #f4f4f4;
+            background: linear-gradient(135deg, #00bfa5, #007bff);
+            color: #fff;
+            position: relative; /* Ensure positioning context for buttons */
         }
 
         .search-container {
@@ -22,54 +25,75 @@
             margin-bottom: 20px;
         }
 
+        .search-container h1 {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
         .search-container input[type="text"] {
-            padding: 10px;
-            width: 300px;
+            padding: 15px;
+            width: 350px;
             font-size: 18px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 25px;
             outline: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .search-container button {
-            padding: 10px 20px;
-            margin-left: 10px;
+            padding: 15px 30px;
+            margin-left: 15px;
             font-size: 18px;
-            background-color: #007bff;
+            background-color: #ff9800;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
         }
 
         .search-container button:hover {
-            background-color: #0056b3;
+            background-color: #e67e22;
         }
 
-        .job-listings {
+        .job-listings-container {
             width: 80%;
             max-width: 800px;
+            height: 60vh;
+            overflow-y: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #333;
         }
 
         .job {
-            background-color: white;
+            background-color: #f9f9f9;
             padding: 20px;
             margin-bottom: 20px;
-            border-radius: 5px;
+            border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .job:hover {
+            transform: translateY(-5px);
         }
 
         .job h2 {
             margin: 0 0 10px;
             font-size: 24px;
-            color: #333;
+            color: #007bff;
         }
 
         .job p {
             margin: 0 0 10px;
-            color: #666;
+            color: #555;
         }
 
         .job a {
@@ -80,33 +104,79 @@
         .job a:hover {
             text-decoration: underline;
         }
+
+        /* Style for the Sign Up and Login buttons */
+        .signup-button,
+        .login-button,
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        .signup-button {
+            right: 20px;
+        }
+
+        .login-button {
+            right: 120px;
+        }
+
+        .signup-button:hover,
+        .login-button:hover,
+        .logout-button:hover {
+            background-color: #0056b3;
+        }
+
+        .logout-button {
+            right: 20px;
+        }
     </style>
 </head>
+
 <body>
+    <!-- Check if user is authenticated using Django template tags -->
+    {% if user.is_authenticated %}
+    <div style="position: absolute; top: 20px; left: 20px; color: #fff;">
+        Welcome, {{ username }}!
+        <button class="signup-button" onclick="window.location.href='/profile/'">Edit Profile</button>
+    </div>
+        <button class="logout-button" onclick="logout()">Logout</button>
+    {% else %}
+        <button class="signup-button" onclick="window.location.href='/signup/'">Sign Up</button>
+        <button class="login-button" onclick="window.location.href='/login/'">Login</button>
+    {% endif %}
+
     <div class="search-container">
-        <h1>Find Your Dream Job</h1>
+        <h1>JobsKhojo</h1>
         <input type="text" id="job-search" placeholder="Search for jobs...">
         <button onclick="searchJobs()">Search</button>
     </div>
 
-    <div id="job-results" class="job-listings"></div>
+    <div id="job-results" class="job-listings-container"></div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            searchJobs();
+        });
+
         function searchJobs() {
             const query = document.getElementById('job-search').value.toLowerCase();
-            fetch('jobs')
+            fetch(`/?search=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
                     const resultsContainer = document.getElementById('job-results');
                     resultsContainer.innerHTML = '';
 
-                    const filteredData = data.filter(job =>
-                        job.job_title.toLowerCase().includes(query) ||
-                        job.company_name.toLowerCase().includes(query) ||
-                        job.job_location.toLowerCase().includes(query)
-                    );
-
-                    filteredData.forEach(job => {
+                    data.forEach(job => {
                         const jobDiv = document.createElement('div');
                         jobDiv.classList.add('job');
                         jobDiv.innerHTML = `
@@ -121,11 +191,36 @@
                         resultsContainer.appendChild(jobDiv);
                     });
 
-                    if (filteredData.length === 0) {
+                    if (data.length === 0) {
                         resultsContainer.innerHTML = '<p>No jobs found matching your search criteria.</p>';
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const resultsContainer = document.getElementById('job-results');
+                    resultsContainer.innerHTML = '<p>An error occurred while searching for jobs. Please try again later.</p>';
                 });
         }
+        function logout() {
+        fetch('/logout/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token for security
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '/';  // Redirect to home page after logout
+            } else {
+                console.error('Logout failed.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
     </script>
 </body>
+
 </html>

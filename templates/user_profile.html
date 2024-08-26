@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-top: 0;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>User Profile</h1>
+        <form id="profile-form">
+            <h2>Profile Information</h2>
+            <input type="text" id="username" placeholder="Username" disabled>
+            <input type="email" id="email" placeholder="Email">
+            <textarea id="address" placeholder="Address"></textarea>
+            <input type="text" id="resume_link" placeholder="Resume Link">
+            <h2>Education</h2>
+            <div id="education-container"></div>
+            <button type="button" onclick="addEducation()">Add Education</button>
+            <h2>Experience</h2>
+            <div id="experience-container"></div>
+            <button type="button" onclick="addExperience()">Add Experience</button>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/user-profile/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('username').value = data.profile.username;
+                    document.getElementById('email').value = data.profile.email || '';
+                    document.getElementById('address').value = data.profile.address || '';
+                    document.getElementById('resume_link').value = data.profile.resume_link || '';
+                    
+                    const educationContainer = document.getElementById('education-container');
+                    data.education.forEach((edu, index) => {
+                        educationContainer.innerHTML += `
+                            <div>
+                                <input type="text" name="college" placeholder="College" value="${edu.college || ''}">
+                                <input type="text" name="degree" placeholder="Degree" value="${edu.degree || ''}">
+                                <input type="text" name="specialization" placeholder="Specialization" value="${edu.specialization || ''}">
+                                <input type="date" name="start_date" placeholder="Start Date" value="${edu.start_date || ''}">
+                                <input type="date" name="end_date" placeholder="End Date" value="${edu.end_date || ''}">
+                                <button type="button" onclick="removeEducation(this)">Remove</button>
+                            </div>
+                        `;
+                    });
+
+                    const experienceContainer = document.getElementById('experience-container');
+                    data.experience.forEach((exp, index) => {
+                        experienceContainer.innerHTML += `
+                            <div>
+                                <input type="text" name="company_name" placeholder="Company Name" value="${exp.company_name || ''}">
+                                <input type="text" name="job_title" placeholder="Job Title" value="${exp.job_title || ''}">
+                                <input type="date" name="start_date" placeholder="Start Date" value="${exp.start_date || ''}">
+                                <input type="date" name="end_date" placeholder="End Date" value="${exp.end_date || ''}">
+                                <button type="button" onclick="removeExperience(this)">Remove</button>
+                            </div>
+                        `;
+                    });
+                });
+        });
+
+        document.getElementById('profile-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const profileData = {
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
+                resume_link: document.getElementById('resume_link').value
+            };
+
+            const educationData = Array.from(document.querySelectorAll('#education-container div')).map(div => {
+                return {
+                    college: div.querySelector('[name="college"]').value,
+                    degree: div.querySelector('[name="degree"]').value,
+                    specialization: div.querySelector('[name="specialization"]').value,
+                    start_date: div.querySelector('[name="start_date"]').value,
+                    end_date: div.querySelector('[name="end_date"]').value
+                };
+            });
+
+            const experienceData = Array.from(document.querySelectorAll('#experience-container div')).map(div => {
+                return {
+                    company_name: div.querySelector('[name="company_name"]').value,
+                    job_title: div.querySelector('[name="job_title"]').value,
+                    start_date: div.querySelector('[name="start_date"]').value,
+                    end_date: div.querySelector('[name="end_date"]').value
+                };
+            });
+
+            fetch('/user-profile/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    profile: profileData,
+                    education: educationData,
+                    experience: experienceData
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Profile updated successfully');
+            });
+        });
+
+        function addEducation() {
+            const container = document.getElementById('education-container');
+            container.innerHTML += `
+                <div>
+                    <input type="text" name="college" placeholder="College">
+                    <input type="text" name="degree" placeholder="Degree">
+                    <input type="text" name="specialization" placeholder="Specialization">
+                    <input type="date" name="start_date" placeholder="Start Date">
+                    <input type="date" name="end_date" placeholder="End Date">
+                    <button type="button" onclick="removeEducation(this)">Remove</button>
+                </div>
+            `;
+        }
+
+        function removeEducation(button) {
+            button.parentElement.remove();
+        }
+
+        function addExperience() {
+            const container = document.getElementById('experience-container');
+            container.innerHTML += `
+                <div>
+                    <input type="text" name="company_name" placeholder="Company Name">
+                    <input type="text" name="job_title" placeholder="Job Title">
+                    <input type="date" name="start_date" placeholder="Start Date">
+                    <input type="date" name="end_date" placeholder="End Date">
+                    <button type="button" onclick="removeExperience(this)">Remove</button>
+                </div>
+            `;
+        }
+
+        function removeExperience(button) {
+            button.parentElement.remove();
+        }
+    </script>
+</body>
+
+</html>
+
