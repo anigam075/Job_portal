@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
+    <title>User Profile - JobsKhojo</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -12,6 +12,7 @@
             padding: 0;
             background: #f4f4f4;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -20,16 +21,20 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             margin-top: 0;
         }
-        input, textarea {
+
+        input,
+        textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+
         button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -38,6 +43,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #0056b3;
         }
@@ -47,7 +53,8 @@
 <body>
     <div class="container">
         <h1>User Profile</h1>
-        <form id="profile-form">
+        <form id="profile-form" method="post">
+            {% csrf_token %}
             <h2>Profile Information</h2>
             <input type="text" id="username" placeholder="Username" disabled>
             <input type="email" id="email" placeholder="Email">
@@ -64,42 +71,53 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('/user-profile/')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('username').value = data.profile.username;
-                    document.getElementById('email').value = data.profile.email || '';
-                    document.getElementById('address').value = data.profile.address || '';
-                    document.getElementById('resume_link').value = data.profile.resume_link || '';
-                    
-                    const educationContainer = document.getElementById('education-container');
-                    data.education.forEach((edu, index) => {
-                        educationContainer.innerHTML += `
-                            <div>
-                                <input type="text" name="college" placeholder="College" value="${edu.college || ''}">
-                                <input type="text" name="degree" placeholder="Degree" value="${edu.degree || ''}">
-                                <input type="text" name="specialization" placeholder="Specialization" value="${edu.specialization || ''}">
-                                <input type="date" name="start_date" placeholder="Start Date" value="${edu.start_date || ''}">
-                                <input type="date" name="end_date" placeholder="End Date" value="${edu.end_date || ''}">
-                                <button type="button" onclick="removeEducation(this)">Remove</button>
-                            </div>
-                        `;
-                    });
+        // Function to get CSRF token from the cookie
+        function getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            const csrfCookie = cookies.find(cookie => cookie.trim().startsWith('csrftoken='));
+            return csrfCookie ? csrfCookie.split('=')[1] : '';
+        }
 
-                    const experienceContainer = document.getElementById('experience-container');
-                    data.experience.forEach((exp, index) => {
-                        experienceContainer.innerHTML += `
-                            <div>
-                                <input type="text" name="company_name" placeholder="Company Name" value="${exp.company_name || ''}">
-                                <input type="text" name="job_title" placeholder="Job Title" value="${exp.job_title || ''}">
-                                <input type="date" name="start_date" placeholder="Start Date" value="${exp.start_date || ''}">
-                                <input type="date" name="end_date" placeholder="End Date" value="${exp.end_date || ''}">
-                                <button type="button" onclick="removeExperience(this)">Remove</button>
-                            </div>
-                        `;
-                    });
-                });
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get the context data from Django template
+            const profileData = {{ profile|safe }};
+            const educationData = {{ education|safe }};
+            const experienceData = {{ experience|safe }};
+
+            // Populate profile information
+            document.getElementById('username').value = profileData.username;
+            document.getElementById('email').value = profileData.email || '';
+            document.getElementById('address').value = profileData.address || '';
+            document.getElementById('resume_link').value = profileData.resume_link || '';
+
+            // Populate education information
+            const educationContainer = document.getElementById('education-container');
+            educationData.forEach(edu => {
+                educationContainer.innerHTML += `
+                    <div>
+                        <input type="text" name="college" placeholder="College" value="${edu.college || ''}">
+                        <input type="text" name="degree" placeholder="Degree" value="${edu.degree || ''}">
+                        <input type="text" name="specialization" placeholder="Specialization" value="${edu.specialization || ''}">
+                        <input type="date" name="start_date" placeholder="Start Date" value="${edu.start_date || ''}">
+                        <input type="date" name="end_date" placeholder="End Date" value="${edu.end_date || ''}">
+                        <button type="button" onclick="removeEducation(this)">Remove</button>
+                    </div>
+                `;
+            });
+
+            // Populate experience information
+            const experienceContainer = document.getElementById('experience-container');
+            experienceData.forEach(exp => {
+                experienceContainer.innerHTML += `
+                    <div>
+                        <input type="text" name="company_name" placeholder="Company Name" value="${exp.company_name || ''}">
+                        <input type="text" name="job_title" placeholder="Job Title" value="${exp.job_title || ''}">
+                        <input type="date" name="start_date" placeholder="Start Date" value="${exp.start_date || ''}">
+                        <input type="date" name="end_date" placeholder="End Date" value="${exp.end_date || ''}">
+                        <button type="button" onclick="removeExperience(this)">Remove</button>
+                    </div>
+                `;
+            });
         });
 
         document.getElementById('profile-form').addEventListener('submit', (event) => {
@@ -130,11 +148,11 @@
                 };
             });
 
-            fetch('/user-profile/', {
+            fetch('/profile/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': getCsrfToken()  // Add CSRF token header
                 },
                 body: JSON.stringify({
                     profile: profileData,
@@ -145,7 +163,8 @@
             .then(response => response.json())
             .then(data => {
                 alert('Profile updated successfully');
-            });
+            })
+            .catch(error => console.error('Error:', error));
         });
 
         function addEducation() {
@@ -186,4 +205,3 @@
 </body>
 
 </html>
-

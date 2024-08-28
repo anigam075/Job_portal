@@ -62,6 +62,7 @@ class JobSerializer(serializers.ModelSerializer):
         fields = ['job_title', 'company_name', 'start_date', 'end_date', 'description']
 
     def create(self, validated_data):
+        print('Inside serializers')
         user = self.context['request'].user  # Get the current logged-in user
         email = user.email  # Get the current logged-in user's email
         job_data = WorkExperience.objects.create(

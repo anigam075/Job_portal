@@ -139,7 +139,7 @@
         document.getElementById('signup-form').addEventListener('submit', function (event) {
             event.preventDefault();
 
-            // Collect basic form data
+            // Collect form data
             const formData = new FormData(this);
             const data = {
                 first_name: formData.get('first_name'),
@@ -156,22 +156,40 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // CSRF token for security
                 },
                 body: JSON.stringify(data),
             })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.token) {
-                        // Redirect to add_education.html with token
-                        window.location.href = '/add_education/?token=' + encodeURIComponent(data.token);
-                    } else if (data.errors) {
-                        console.error('Error:', data.errors);
+                    if (data.user) {
+                        // Redirect to add_education.html upon successful signup
+                        window.location.href = '/add_education/';
+                    } else if (data.error) {
+                        console.error('Error:', data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
         });
+
+        // Function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
     </script>
 </body>
 </html>

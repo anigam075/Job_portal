@@ -63,7 +63,6 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            margin-right: 10px; /* Add margin on the right */
         }
 
         .form-group input[type="date"] {
@@ -81,6 +80,27 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s ease;
         }
+        .finish-button {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .finish-button button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        .finish-button button:hover {
+            background-color: #0056b3;
+        }
 
         .form-group button:hover {
             background-color: #e67e22;
@@ -95,6 +115,8 @@
             <div id="user-info"></div>
         </div>
         <form id="job-form">
+            <!-- Include CSRF token -->
+            {% csrf_token %}
             <div class="form-group">
                 <label for="job_title">Job Title:</label>
                 <input type="text" id="job_title" name="job_title" required>
@@ -119,24 +141,14 @@
                 <button type="submit">Submit</button>
             </div>
         </form>
+        <div class="finish-button">
+            <button type="button" onclick="location.href='{% url 'index' %}'">Finish</button>
+        </div>
     </div>
 
     <script>
-        // Function to get query parameter value
-        function getQueryParam(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
-
-        // Get the token from URL
-        const token = getQueryParam('token');
-
-        // Display username (fetch from API if needed)
-        fetch('/user_info/', {
-            headers: {
-                'Authorization': 'Token ' + token
-            }
-        })
+        // Fetch user info using session authentication
+        fetch('/user_info/')
         .then(response => response.json())
         .then(data => {
             if (data.username) {
@@ -144,40 +156,62 @@
             } else {
                 document.getElementById('user-info').innerText = 'User not authenticated';
             }
+        })
+        .catch(error => {
+            console.error('Error fetching user info:', error);
+            document.getElementById('user-info').innerText = 'Error fetching user info';
         });
+
+        // Function to get CSRF token from cookies
+        function getCSRFToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
 
         // Handle form submission
         document.getElementById('job-form').addEventListener('submit', function (event) {
             event.preventDefault();
 
-            const formData = new FormData(this);
-            const data = {
-                job_title: formData.get('job_title'),
-                company_name: formData.get('company_name'),
-                start_date: formData.get('start_date'),
-                end_date: formData.get('end_date'),
-                description: formData.get('description')
+            const formData = {
+                job_title: document.getElementById('job_title').value,
+                company_name: document.getElementById('company_name').value,
+                start_date: document.getElementById('start_date').value,
+                end_date: document.getElementById('end_date').value,
+                description: document.getElementById('description').value
             };
 
             fetch('/add_job/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + token
+                    'X-CSRFToken': getCSRFToken()  // Include CSRF token in the headers
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(formData),
             })
             .then(response => response.json())
             .then(data => {
                 if (data.errors) {
                     console.error('Error:', data.errors);
+                    alert('Failed to add job details. Please try again.');
                 } else {
-                    // Handle success (e.g., show a success message or redirect)
                     alert('Job details added successfully!');
+                    // Optionally, redirect or clear the form here
+                    // window.location.href = '/add_job/'; // Example redirection
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error submitting form:', error);
+                alert('An error occurred while adding job details. Please try again.');
             });
         });
     </script>

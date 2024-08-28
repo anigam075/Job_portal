@@ -105,7 +105,7 @@
             text-decoration: underline;
         }
 
-        /* Style for the Sign Up and Login buttons */
+        /* Style for the Sign Up, Login, and Logout buttons */
         .signup-button,
         .login-button,
         .logout-button {
@@ -145,10 +145,10 @@
 <body>
     <!-- Check if user is authenticated using Django template tags -->
     {% if user.is_authenticated %}
-    <div style="position: absolute; top: 20px; left: 20px; color: #fff;">
-        Welcome, {{ username }}!
-        <button class="signup-button" onclick="window.location.href='/profile/'">Edit Profile</button>
-    </div>
+        <div style="position: absolute; top: 20px; left: 20px; color: #fff;">
+            Welcome, {{ user.username }}!
+            <button class="signup-button" onclick="window.location.href='/profile/'">Edit Profile</button>
+        </div>
         <button class="logout-button" onclick="logout()">Logout</button>
     {% else %}
         <button class="signup-button" onclick="window.location.href='/signup/'">Sign Up</button>
@@ -201,25 +201,43 @@
                     resultsContainer.innerHTML = '<p>An error occurred while searching for jobs. Please try again later.</p>';
                 });
         }
+
         function logout() {
-        fetch('/logout/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token for security
+            fetch('/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // Include CSRF token for security
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/';  // Redirect to home page after logout
+                } else {
+                    console.error('Logout failed.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
             }
-        })
-        .then(response => {
-            if (response.ok) {
-                window.location.href = '/';  // Redirect to home page after logout
-            } else {
-                console.error('Logout failed.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
+            return cookieValue;
+        }
     </script>
 </body>
 
